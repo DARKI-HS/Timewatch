@@ -7,6 +7,14 @@ Dienstfahrt Beginn
 Dienstfahrt Ende
 Gehen
 
-Letzte Einträge
+Monat
+0
+> 8 h
+0
+< 8 h
+🖨 Monat drucken
+Einträge im ausgewählten Monat
 
-Einträge löschen
+Alle Daten löschen
+Letzter Gehen-Zeitpunkt bleibt erhalten
+Zeitangaben werden nur auf diesem Gerät gespeichert.
