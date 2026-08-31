@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Zeiterfassung</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;padding:28px 16px}main{max-width:430px;margin:auto}h1{text-align:center;font-size:30px;margin:5px 0 16px}.card{background:#1c1c1e;border-radius:20px}.last{text-align:center;padding:17px;margin-bottom:14px}.label{color:#aaa;font-size:14px;margin-bottom:6px}#lastTime{font-size:25px;font-weight:700}#lastDate{color:#aaa;font-size:14px;margin-top:4px}.buttons{display:flex;flex-direction:column;gap:11px}button{display:block;width:100%;height:72px;border:0;border-radius:19px;color:#fff;font-size:20px;font-weight:700;-webkit-appearance:none}.green{background:#30d158}.blue{background:#0a84ff}.orange{background:#ff9f0a}.red{background:#ff453a}.status{text-align:center;color:#aaa;font-size:13px;min-height:20px;margin:10px 0}.month{padding:14px 16px;margin-top:4px}label{display:block;color:#aaa;font-size:13px;margin-bottom:7px}select{width:100%;height:46px;border:0;border-radius:12px;background:#2c2c2e;color:#fff;font-size:17px;padding:0 10px}.summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.sum{border-radius:16px;padding:12px;text-align:center;font-weight:700}.sum b{display:block;font-size:28px}.sum.greenbox{background:#163d22;color:#30d158}.sum.bluebox{background:#132e4a;color:#0a84ff}.print{margin-top:12px;background:#2c2c2e;height:50px;font-size:17px}.history{margin-top:12px;overflow:hidden}.history h2{font-size:17px;padding:15px 16px 10px;margin:0}.entry{display:flex;justify-content:space-between;padding:10px 16px;border-top:1px solid #38383a}.entry small{color:#aaa;text-align:right}.empty{padding:0 16px 15px;color:#aaa}.clear{height:45px;background:none;color:#ff453a;font-size:14px;font-weight:500}.note{text-align:center;color:#777;font-size:11px;margin-top:10px}@media print{@page{size:A4 portrait;margin:12mm}body{background:#fff;color:#000;padding:0}main{display:none}#printArea{display:block!important}}#printArea{display:none}.ptitle{font-size:22px;font-weight:700;margin-bottom:4px}.psub{font-size:13px;margin-bottom:12px}.ptable{width:100%;border-collapse:collapse;font-size:10px}.ptable th,.ptable td{border:1px solid #999;padding:5px;text-align:center}.pg{color:#168a35;font-weight:700}.pb{color:#0666c5;font-weight:700}
+</style>
+</head>
+<body>
+<main>
+<h1>Zeiterfassung</h1>
+<section class="card last"><div class="label">Letzter Gehen-Zeitpunkt</div><div id="lastTime">Noch nicht erfasst</div><div id="lastDate"></div></section>
+<section class="buttons">
+<button class="green" onclick="save('Kommen')">Kommen</button>
+<button class="blue" onclick="save('Dienstfahrt Beginn')">Dienstfahrt Beginn</button>
+<button class="orange" onclick="save('Dienstfahrt Ende')">Dienstfahrt Ende</button>
+<button class="red" onclick="save('Gehen')">Gehen</button>
+</section>
+<div id="status" class="status"></div>
+<section class="card month">
+<label for="month">Monat</label><select id="month" onchange="render()"></select>
+<div class="summary"><div class="sum greenbox"><b id="over">0</b>&gt; 8 h</div><div class="sum bluebox"><b id="under">0</b>&lt; 8 h</div></div>
+<button class="print" onclick="printMonth()">🖨 Monat drucken</button>
+</section>
+<section class="card history"><h2>Einträge im ausgewählten Monat</h2><div id="history"></div><button class="clear" onclick="clearAll()">Alle Daten löschen<br><small>Letzter Gehen-Zeitpunkt bleibt erhalten</small></button></section>
+<div class="note">Zeitangaben werden nur auf diesem Gerät gespeichert.</div>
+</main>
+<section id="printArea"><div class="ptitle">Zeiterfassung</div><div id="printMonth" class="psub"></div>
+<table class="ptable"><thead><tr><th>Datum</th><th>Dienstfahrt Beginn</th><th>Dienstfahrt Ende</th><th>Dauer</th><th>Bewertung</th></tr></thead><tbody id="printRows"></tbody></table>
+<div id="printSum" class="psub"></div></section>
+<script>
+const K="zeiterfassung_v4",G="zeiterfassung_letztes_gehen";
+function all(){try{return JSON.parse(localStorage.getItem(K)||"[]")}catch(e){return[]}}
+function tm(x){return new Date(x).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})}
+function dt(x){return new Date(x).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})}
+function mk(x){let d=new Date(x);return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")}
+function ml(k){let a=k.split("-");return new Date(+a[0],+a[1]-1,1).toLocaleDateString("de-DE",{month:"long",year:"numeric"})}
+function save(type){let now=new Date(),a=all();a.unshift({type:type,stamp:now.toISOString()});localStorage.setItem(K,JSON.stringify(a));if(type==="Gehen")localStorage.setItem(G,JSON.stringify({stamp:now.toISOString()}));render();document.getElementById("month").value=mk(now);document.getElementById("status").textContent=type+" gespeichert: "+dt(now)+" "+tm(now);setTimeout(()=>document.getElementById("status").textContent="",3000)}
+function months(){let s=document.getElementById("month"),old=s.value,set=new Set([mk(Date.now())]);all().forEach(x=>set.add(mk(x.stamp)));let keys=[...set].sort().reverse();s.innerHTML=keys.map(k=>'<option value="'+k+'">'+ml(k)+"</option>").join("");if(keys.includes(old))s.value=old}
+function pairs(k){let a=all().filter(x=>mk(x.stamp)===k).sort((a,b)=>new Date(a.stamp)-new Date(b.stamp)),open=[],out=[];a.forEach(x=>{if(x.type==="Dienstfahrt Beginn")open.push(x);else if(x.type==="Dienstfahrt Ende"){let b=open.pop();if(b){let bd=new Date(b.stamp),ed=new Date(x.stamp),bm=bd.getHours()*60+bd.getMinutes(),em=ed.getHours()*60+ed.getMinutes(),m=em-bm;if(m<0)m+=1440;out.push({b:bd,e:ed,m:m})}else out.push({b:null,e:new Date(x.stamp),m:null})}});open.forEach(x=>out.push({b:new Date(x.stamp),e:null,m:null}));return out.sort((a,b)=>(a.b||a.e)-(b.b||b.e))}
+function dur(m){return m==null?"—":Math.floor(m/60)+" h "+String(m%60).padStart(2,"0")+" min"}
+function render(){months();let k=document.getElementById("month").value,g=null;try{g=JSON.parse(localStorage.getItem(G)||"null")}catch(e){}document.getElementById("lastTime").textContent=g?tm(g.stamp):"Noch nicht erfasst";document.getElementById("lastDate").textContent=g?dt(g.stamp):"";let p=pairs(k);document.getElementById("over").textContent=p.filter(x=>x.m>480).length;document.getElementById("under").textContent=p.filter(x=>x.m<480).length;let a=all().filter(x=>mk(x.stamp)===k).sort((a,b)=>new Date(b.stamp)-new Date(a.stamp)),h=document.getElementById("history");h.innerHTML=a.length?a.slice(0,40).map(x=>'<div class="entry"><strong>'+x.type+'</strong><small>'+dt(x.stamp)+'<br>'+tm(x.stamp)+'</small></div>').join(""):'<div class="empty">Keine Einträge in diesem Monat.</div>'}
+function clearAll(){if(confirm("Alle Zeit-Einträge löschen? Der letzte Gehen-Zeitpunkt bleibt erhalten.")){localStorage.removeItem(K);render()}}
+function printMonth(){let k=document.getElementById("month").value,p=pairs(k),o=p.filter(x=>x.m>480).length,u=p.filter(x=>x.m<480).length,e=p.filter(x=>x.m===480).length;document.getElementById("printMonth").textContent=ml(k);document.getElementById("printRows").innerHTML=p.map(x=>{let r=x.m==null?"—":x.m>480?"> 8 h":x.m<480?"< 8 h":"= 8 h",c=x.m>480?"pg":x.m<480?"pb":"";return "<tr><td>"+dt(x.b||x.e)+"</td><td>"+(x.b?tm(x.b):"—")+"</td><td>"+(x.e?tm(x.e):"—")+"</td><td>"+dur(x.m)+"</td><td class='"+c+"'>"+r+"</td></tr>"}).join("");document.getElementById("printSum").textContent="Tage > 8 h: "+o+" | Tage < 8 h: "+u+" | Tage = 8 h: "+e;window.print()}
+render();
+</script>
+</body></html>
